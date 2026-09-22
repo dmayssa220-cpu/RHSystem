@@ -1,0 +1,84 @@
+# Environnement SIRH — tout tourne dans Docker.
+#
+#   docker compose up -d --build
+#
+# Aucune installation locale de .NET ou de Node n'est nécessaire pour faire tourner
+# l'application : le SDK .NET et Node ne servent qu'à l'intérieur des images de build
+# (voir backend/Dockerfile et web/Dockerfile), jamais sur la machine hôte.
+
+name: sirh
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Définis MYSQL_ROOT_PASSWORD dans .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-sirh}
+      MYSQL_APP_USER: ${MYSQL_APP_USER:-sirh_app}
+      MYSQL_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?Définis MYSQL_APP_PASSWORD dans .env}
+      MYSQL_MIGRATOR_USER: ${MYSQL_MIGRATOR_USER:-sirh_migrator}
+      MYSQL_MIGRATOR_PASSWORD: ${MYSQL_MIGRATOR_PASSWORD:?Définis MYSQL_MIGRATOR_PASSWORD dans .env}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+00:00
+    ports:
+      - "127.0.0.1:3306:3306" # accessible uniquement depuis ta machine
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks: [backend]
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+    ports:
+      - "127.0.0.1:8081:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks: [backend]
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__Default: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE:-sirh};User ID=${MYSQL_APP_USER:-sirh_app};Password=${MYSQL_APP_PASSWORD};"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks: [frontend, backend]
+
+  web:
+    build:
+      context: ./web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    depends_on:
+      - api
+    networks: [frontend]
+
+networks:
+  frontend:
+  backend:
+
+volumes:
+  mysql_data:

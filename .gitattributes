@@ -1,0 +1,4 @@
+# Les scripts shell doivent garder des fins de ligne LF (sinon ils cassent dans Docker sous Windows)
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.conf text eol=lf

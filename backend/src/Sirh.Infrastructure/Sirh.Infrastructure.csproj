@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Fournisseur MySQL pour EF Core 10 (fork de Pomelo qui suit EF Core 10 / .NET 10 ;
+         le dépôt Pomelo d'origine n'avait pas encore ce support à l'écriture de ce projet). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
+    <PackageReference Include="Microting.EntityFrameworkCore.MySql" Version="10.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sirh.Application\Sirh.Application.csproj" />
+  </ItemGroup>
+
+</Project>

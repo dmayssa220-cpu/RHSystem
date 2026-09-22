@@ -1,0 +1,26 @@
+# Secrets
+.env
+*.pfx
+*.key
+secrets/
+
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+TestResults/
+
+# Angular / Node
+node_modules/
+dist/
+.angular/
+
+# IDE / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+*.bak
