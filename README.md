@@ -3,7 +3,7 @@
 Application web de gestion de la paie, de l'administration du personnel et du management des talents
 (contexte tunisien), avec IA générative, détection d'anomalies (ML) et agents IA à venir dans les prochaines étapes.
 
-**Stack (100 % gratuite / open source)** : .NET 10 · Angular 21 + PrimeNG · MySQL 8.4 · Docker.
+**Stack : .NET 10 · Angular 21 + PrimeNG · MySQL 8.4 · Docker.
 
 ## Démarrage
 
@@ -30,7 +30,7 @@ sirh/
 ├─ web/                     Angular + PrimeNG (template Sakai personnalisé, voir web/README.md)
 ├─ docker/mysql/init/       création des comptes MySQL (moindre privilège)
 ├─ docker-compose.yml
-├─ .env                     secrets locaux prêts à l'emploi (jamais versionné)
+├─ .env                     secrets locaux prêts à l'emploi 
           
 ```
 
