@@ -1,4 +1,4 @@
-# SIRH — Paie, personnel et talents avec IA
+# RHSystem — Paie, personnel et talents avec IA
 
 Application web de gestion de la paie, de l'administration du personnel et du management des talents
 (contexte tunisien), avec IA générative, détection d'anomalies (ML) et agents IA à venir dans les prochaines étapes.
@@ -43,21 +43,4 @@ flowchart LR
   API --> DB[(MySQL 8.4)]
 ```
 Monolithe modulaire (Clean Architecture) plutôt que microservices .
-
-**Conventions de données**, à respecter dès le premier module métier :
-- Montants en `DECIMAL(18,3)` (le dinar tunisien se divise en 1 000 millimes).
-- Dates en UTC en base (voir `--default-time-zone=+00:00` dans `docker-compose.yml`), converties à l'affichage.
-- Multi-sociétés : colonne `TenantId` sur chaque table métier (voir `Sirh.Domain.Common.IHasTenant`).
-- Référentiels réglementaires (taux, barèmes) : données datées avec leur source, jamais du code en dur.
-
-## Sécurité — ce qui est déjà en place
-
-| Mesure | Où |
-|---|---|
-| Deux comptes MySQL distincts : `migrator` (schéma) et `app` (données, sans DDL) | `docker/mysql/init/01-users.sh` |
-| MySQL et Adminer exposés uniquement sur `127.0.0.1` | `docker-compose.yml` |
-| Conteneurs applicatifs sans privilèges (`no-new-privileges`, `cap_drop: ALL`, utilisateur non-root) | `docker-compose.yml`, Dockerfiles |
-| En-têtes de sécurité et CSP stricte (aucun script inline) | `web/security-headers.conf` |
-| Réseaux Docker séparés : `frontend` (web ↔ API) et `backend` (API ↔ base) | `docker-compose.yml` |
-| Ressources auto-hébergées (police Inter incluse, aucune requête vers un tiers) | `web/` |
 
