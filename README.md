@@ -1,7 +1,6 @@
 # RHSystem — Paie, personnel et talents avec IA
 
-Application web de gestion de la paie, de l'administration du personnel et du management des talents
-(contexte tunisien), avec IA générative, détection d'anomalies (ML) et agents IA à venir dans les prochaines étapes.
+Application web de gestion de la paie, de l'administration du personnel et du management des talents avec IA générative, détection d'anomalies (ML) et agents IA.
 
 **Stack : .NET 10 · Angular 21 + PrimeNG · MySQL 8.4 · Docker.
 
@@ -30,7 +29,7 @@ sirh/
 ├─ web/                     Angular + PrimeNG (template Sakai personnalisé, voir web/README.md)
 ├─ docker/mysql/init/       création des comptes MySQL (moindre privilège)
 ├─ docker-compose.yml
-├─ .env                     secrets locaux prêts à l'emploi 
+├─ .env                     secrets locaux 
           
 ```
 
