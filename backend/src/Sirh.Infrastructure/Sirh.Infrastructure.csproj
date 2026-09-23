@@ -5,10 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Fournisseur MySQL pour EF Core 10 (fork de Pomelo qui suit EF Core 10 / .NET 10 ;
-         le dépôt Pomelo d'origine n'avait pas encore ce support à l'écriture de ce projet). -->
+    <!-- Versions alignées entre elles (voir README, section Décisions techniques) : le fournisseur
+         MySQL (fork de Pomelo) impose la version exacte d'EF Core avec laquelle il a été publié. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
     <PackageReference Include="Microting.EntityFrameworkCore.MySql" Version="10.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.10" />
   </ItemGroup>
 
   <ItemGroup>

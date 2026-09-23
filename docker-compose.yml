@@ -55,6 +55,12 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__Default: "Server=mysql;Port=3306;Database=${MYSQL_DATABASE:-sirh};User ID=${MYSQL_APP_USER:-sirh_app};Password=${MYSQL_APP_PASSWORD};"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Définis JWT_SIGNING_KEY dans .env}
+      Jwt__Issuer: sirh
+      Jwt__Audience: sirh
+      Jwt__AccessTokenMinutes: "15"
+      Seed__AdminEmail: ${ADMIN_EMAIL:-admin@sirh.local}
+      Seed__AdminPassword: ${ADMIN_PASSWORD:?Définis ADMIN_PASSWORD dans .env}
     security_opt:
       - no-new-privileges:true
     cap_drop: [ALL]
