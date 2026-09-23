@@ -5,6 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Uniquement pour le type DbSet<T> dans IAppDbContext : Application ignore toujours
+         MySQL/Identity, qui restent dans Sirh.Infrastructure. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Sirh.Domain\Sirh.Domain.csproj" />
     <ProjectReference Include="..\Sirh.Payroll.Engine\Sirh.Payroll.Engine.csproj" />
   </ItemGroup>

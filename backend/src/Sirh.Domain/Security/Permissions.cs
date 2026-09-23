@@ -10,10 +10,15 @@ public static class Permissions
     public const string GererUtilisateurs = "administration.utilisateurs.gerer";
     public const string GererRoles = "administration.roles.gerer";
 
+    public const string LirePersonnel = "personnel.dossier.lire";
+    public const string GererPersonnel = "personnel.dossier.gerer";
+
     /// <summary>Liste complète, utilisée pour donner toutes les permissions au rôle Administrateur au démarrage.</summary>
     public static readonly IReadOnlyList<string> Toutes = new[]
     {
         GererUtilisateurs,
-        GererRoles
+        GererRoles,
+        LirePersonnel,
+        GererPersonnel
     };
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Sirh.Application.Persistence;
 using Sirh.Infrastructure.Audit;
 
 namespace Sirh.Infrastructure;
@@ -20,6 +21,8 @@ public static class DependencyInjection
             options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 4, 0)));
             options.AddInterceptors(serviceProvider.GetRequiredService<AuditSaveChangesInterceptor>());
         });
+
+        services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<SirhDbContext>());
 
         return services;
     }

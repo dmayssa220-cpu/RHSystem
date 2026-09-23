@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Sirh.Domain.Personnel;
 using Sirh.Domain.Security;
 using Sirh.Domain.Tenancy;
 using Sirh.Infrastructure;
@@ -30,6 +31,20 @@ public static class DbSeeder
                 CreatedAtUtc = DateTime.UtcNow
             };
             dbContext.Tenants.Add(tenant);
+            await dbContext.SaveChangesAsync();
+        }
+
+        var establishment = await dbContext.Establishments.FirstOrDefaultAsync(e => e.TenantId == tenant.Id);
+        if (establishment is null)
+        {
+            establishment = new Establishment
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenant.Id,
+                Name = "Siège",
+                CreatedAtUtc = DateTime.UtcNow
+            };
+            dbContext.Establishments.Add(establishment);
             await dbContext.SaveChangesAsync();
         }
 
