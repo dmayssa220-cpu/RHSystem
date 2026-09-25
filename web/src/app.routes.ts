@@ -6,14 +6,20 @@ import { Landing } from './app/pages/landing/landing';
 import { Notfound } from './app/pages/notfound/notfound';
 import { APP_MODULES } from './app/core/modules';
 import { ModulePlaceholder } from './app/pages/module/module-placeholder';
+import { authGuard } from './app/core/auth/auth.guard';
+import { Login } from './app/pages/auth/login';
+import { Employees } from './app/pages/personnel/employees';
 
 export const appRoutes: Routes = [
+    { path: 'login', component: Login },
     {
         path: '',
         component: AppLayout,
+        canActivate: [authGuard],
         children: [
             { path: '', component: Dashboard },
-            ...APP_MODULES.map((m) => ({
+            { path: 'personnel', component: Employees },
+            ...APP_MODULES.filter((m) => m.path !== 'personnel').map((m) => ({
                 path: m.path,
                 component: ModulePlaceholder,
                 data: { title: m.label, icon: m.icon, description: m.description }

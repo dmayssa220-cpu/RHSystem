@@ -82,6 +82,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<Sirh.Application.Personnel.EmployeeService>();
+builder.Services.AddScoped<Sirh.Application.Personnel.EstablishmentService>();
 
 // ---------- Limitation de débit sur les points d'entrée d'authentification ----------
 builder.Services.AddRateLimiter(options =>
