@@ -83,7 +83,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("deconnexion")]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<IActionResult> Logout()
     {
         if (Request.Cookies.TryGetValue("refresh_token", out var rawToken) && !string.IsNullOrWhiteSpace(rawToken))

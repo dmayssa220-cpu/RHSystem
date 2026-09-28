@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Sirh.Application.Persistence;
 using Sirh.Application.Security;
+using Sirh.Domain.Payroll;
 using Sirh.Domain.Personnel;
 using Sirh.Domain.Tenancy;
 using Sirh.Infrastructure.Audit;
@@ -31,6 +32,9 @@ public sealed class SirhDbContext(DbContextOptions<SirhDbContext> options, ICurr
     public DbSet<JobPosition> JobPositions => Set<JobPosition>();
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<Contract> Contracts => Set<Contract>();
+
+    // Référentiel national, non rattaché à une société : pas de filtre de cloisonnement ici.
+    public DbSet<PayrollLegalParameters> PayrollLegalParameters => Set<PayrollLegalParameters>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

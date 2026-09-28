@@ -7,11 +7,10 @@ import { AuthService } from './auth.service';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
     const auth = inject(AuthService);
     const isAuthEndpoint = req.url.startsWith('/api/auth/');
-    const isLogoutEndpoint = req.url === '/api/auth/deconnexion';
 
     const withToken = (request: typeof req) => {
         const token = auth.accessToken;
-        return token && (!isAuthEndpoint || isLogoutEndpoint) ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : request;
+        return token && !isAuthEndpoint ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : request;
     };
 
     return next(withToken(req)).pipe(

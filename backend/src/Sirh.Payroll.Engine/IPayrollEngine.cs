@@ -1,16 +1,51 @@
 namespace Sirh.Payroll.Engine;
 
+public sealed record PayrollBracket(decimal? UpperBoundAnnual, decimal Rate);
+
 /// <summary>
-/// Point d'entrée du moteur de paie. Implémenté à l'étape « moteur de paie tunisien » :
-/// (contexte salarié + variables du mois + référentiel réglementaire daté) → bulletin + trace de calcul.
+/// Paramètres réglementaires nécessaires au calcul. Le moteur ne va jamais les chercher
+/// lui-même (pas de base de données ici) : ils lui sont toujours fournis en entrée.
+/// </summary>
+public sealed record TunisianPayrollParameters(
+    DateOnly EffectiveFrom,
+    string Source,
+    decimal CnssEmployeeRate,
+    decimal CnssEmployerRate,
+    decimal? CnssCeilingAnnual,
+    decimal ProfessionalDeductionRate,
+    decimal ProfessionalDeductionCeilingAnnual,
+    decimal CssRate,
+    decimal FamilyDeductionHeadOfHousehold,
+    decimal FamilyDeductionPerChild,
+    int FamilyDeductionMaxChildren,
+    IReadOnlyList<PayrollBracket> Brackets);
+
+public sealed record PayrollCalculationRequest(
+    decimal GrossMonthlySalary,
+    bool IsHeadOfHousehold,
+    int DependentChildren,
+    TunisianPayrollParameters Parameters);
+
+/// <summary>Une ligne de la trace de calcul : ce que voit un utilisateur qui demande "pourquoi ce montant ?".</summary>
+public sealed record PayrollTraceLine(string Label, decimal Amount, string? Detail = null);
+
+public sealed record PayrollCalculationResult(
+    decimal GrossMonthlySalary,
+    decimal CnssEmployeeMonthly,
+    decimal CnssEmployerMonthly,
+    decimal TaxableAnnual,
+    decimal IrppAnnual,
+    decimal IrppMonthly,
+    decimal CssMonthly,
+    decimal NetMonthly,
+    IReadOnlyList<PayrollTraceLine> Trace);
+
+/// <summary>
+/// Point d'entrée du moteur de paie : fonction pure, (entrées + paramètres légaux) → résultat + trace.
+/// Mêmes entrées et mêmes paramètres = toujours le même résultat, ce qui permet de rejouer un calcul
+/// à l'identique et d'expliquer chaque montant du bulletin.
 /// </summary>
 public interface IPayrollEngine
 {
     PayrollCalculationResult Calculate(PayrollCalculationRequest request);
 }
-
-/// <summary>Entrée du calcul. Complétée au fil du développement du moteur.</summary>
-public sealed record PayrollCalculationRequest;
-
-/// <summary>Résultat du calcul (bulletin + trace). Complété au fil du développement du moteur.</summary>
-public sealed record PayrollCalculationResult;

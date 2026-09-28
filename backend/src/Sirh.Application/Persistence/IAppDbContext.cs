@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Sirh.Domain.Payroll;
 using Sirh.Domain.Personnel;
 
 namespace Sirh.Application.Persistence;
@@ -15,6 +16,7 @@ public interface IAppDbContext
     DbSet<JobPosition> JobPositions { get; }
     DbSet<Employee> Employees { get; }
     DbSet<Contract> Contracts { get; }
+    DbSet<PayrollLegalParameters> PayrollLegalParameters { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

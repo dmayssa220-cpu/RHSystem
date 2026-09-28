@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Sirh.Domain.Payroll;
 using Sirh.Domain.Personnel;
 using Sirh.Domain.Security;
 using Sirh.Domain.Tenancy;
@@ -102,5 +103,53 @@ public static class DbSeeder
         {
             await userManager.AddToRoleAsync(adminUser, adminRoleName);
         }
+
+        await SeedPayrollLegalParametersAsync(dbContext);
+    }
+
+    /// <summary>
+    /// Amorce le référentiel réglementaire de paie tunisien (CNSS RSNA, barème IRPP à 8 tranches
+    /// de la loi de finances 2025, CSS) avec les valeurs publiquement disponibles en 2026.
+    ///
+    /// AVERTISSEMENT : ces chiffres n'ont pas été validés par un expert-comptable ou un juriste.
+    /// À vérifier avant tout calcul de paie réel (voir README, section Sécurité).
+    /// </summary>
+    private static async Task SeedPayrollLegalParametersAsync(SirhDbContext dbContext)
+    {
+        if (await dbContext.PayrollLegalParameters.AnyAsync())
+        {
+            return;
+        }
+
+        var parameters = new PayrollLegalParameters
+        {
+            Id = Guid.NewGuid(),
+            EffectiveFrom = new DateOnly(2026, 1, 1),
+            Source = "Loi de finances 2025 (loi n° 48-2024) : barème IRPP à 8 tranches ; taux CNSS RSNA et CSS publics 2026 — à valider par un expert avant tout calcul réel.",
+            CnssEmployeeRate = 0.0968m,
+            CnssEmployerRate = 0.1707m,
+            CnssCeilingAnnual = null,
+            ProfessionalDeductionRate = 0.10m,
+            ProfessionalDeductionCeilingAnnual = 2000m,
+            CssRate = 0.005m,
+            FamilyDeductionHeadOfHousehold = 300m,
+            FamilyDeductionPerChild = 100m,
+            FamilyDeductionMaxChildren = 4
+        };
+
+        parameters.SetBrackets(
+        [
+            new LegalBracket(5000m, 0m),
+            new LegalBracket(10000m, 0.15m),
+            new LegalBracket(20000m, 0.25m),
+            new LegalBracket(30000m, 0.30m),
+            new LegalBracket(40000m, 0.33m),
+            new LegalBracket(50000m, 0.36m),
+            new LegalBracket(70000m, 0.38m),
+            new LegalBracket(null, 0.40m)
+        ]);
+
+        dbContext.PayrollLegalParameters.Add(parameters);
+        await dbContext.SaveChangesAsync();
     }
 }

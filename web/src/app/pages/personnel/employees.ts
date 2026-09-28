@@ -3,8 +3,11 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
 import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
+import { DividerModule } from 'primeng/divider';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
@@ -13,6 +16,10 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { EmployeeService } from '@/app/core/personnel/employee.service';
 import { EstablishmentService } from '@/app/core/personnel/establishment.service';
+import { ContractService } from '@/app/core/personnel/contract.service';
+import { CONTRACT_TYPE_OPTIONS, ContractSummary } from '@/app/core/personnel/contract.models';
+import { PayrollService } from '@/app/core/payroll/payroll.service';
+import { PayrollPreviewResult } from '@/app/core/payroll/payroll.models';
 import { EmployeeDetail, EmployeeSummary, GENDER_OPTIONS, EMPLOYEE_STATUS_OPTIONS, employeeStatusLabel, employeeStatusSeverity } from '@/app/core/personnel/employee.models';
 
 interface EstablishmentOption {
@@ -52,7 +59,22 @@ function emptyForm(): EmployeeFormModel {
 @Component({
     selector: 'app-employees',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, ButtonModule, ToolbarModule, ToastModule, DialogModule, InputTextModule, SelectModule, DatePickerModule, TagModule],
+    imports: [
+        CommonModule,
+        FormsModule,
+        TableModule,
+        ButtonModule,
+        ToolbarModule,
+        ToastModule,
+        DialogModule,
+        InputTextModule,
+        InputNumberModule,
+        SelectModule,
+        DatePickerModule,
+        TagModule,
+        CheckboxModule,
+        DividerModule
+    ],
     providers: [MessageService],
     template: `
         <div class="card">
@@ -82,7 +104,8 @@ function emptyForm(): EmployeeFormModel {
                         <td>{{ employee.hireDate | date: 'dd/MM/yyyy' }}</td>
                         <td><p-tag [value]="statusLabel(employee.status)" [severity]="statusSeverity(employee.status)" /></td>
                         <td>
-                            <p-button icon="pi pi-pencil" [rounded]="true" [outlined]="true" (click)="openEdit(employee)" />
+                            <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="openEdit(employee)" />
+                            <p-button icon="pi pi-wallet" [rounded]="true" [outlined]="true" (click)="openPayroll(employee)" />
                         </td>
                     </tr>
                 </ng-template>
@@ -153,12 +176,84 @@ function emptyForm(): EmployeeFormModel {
             </ng-template>
         </p-dialog>
 
+        <p-dialog [(visible)]="payrollDialogVisible" [style]="{ width: '640px' }" header="Paie" [modal]="true">
+            <ng-template #content>
+                <div class="flex flex-col gap-4">
+                    @if (contracts().length === 0) {
+                        <div>
+                            <div class="font-bold mb-2">Aucun contrat pour ce salarié — en ajouter un</div>
+                            <div class="grid grid-cols-12 gap-4">
+                                <div class="col-span-6">
+                                    <label class="block mb-2">Type de contrat</label>
+                                    <p-select [(ngModel)]="contractForm.type" [options]="contractTypeOptions" optionLabel="label" optionValue="value" fluid />
+                                </div>
+                                <div class="col-span-6">
+                                    <label class="block mb-2">Salaire de base (DT/mois)</label>
+                                    <p-inputnumber [(ngModel)]="contractForm.baseSalary" mode="decimal" [minFractionDigits]="3" [maxFractionDigits]="3" fluid />
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <label class="block mb-2">Date de début</label>
+                                <p-datepicker [(ngModel)]="contractForm.startDate" dateFormat="dd/mm/yy" fluid />
+                            </div>
+                            <div class="mt-4">
+                                <p-button label="Créer le contrat" icon="pi pi-plus" [loading]="creatingContract()" (onClick)="createContract()" />
+                            </div>
+                        </div>
+                        <p-divider />
+                    }
+
+                    <div class="grid grid-cols-12 gap-4 items-center">
+                        <div class="col-span-6 flex items-center gap-2">
+                            <p-checkbox [(ngModel)]="payrollForm.isHeadOfHousehold" [binary]="true" inputId="chef" />
+                            <label for="chef">Chef de famille</label>
+                        </div>
+                        <div class="col-span-6">
+                            <label class="block mb-2">Enfants à charge</label>
+                            <p-inputnumber [(ngModel)]="payrollForm.dependentChildren" [min]="0" [max]="10" fluid />
+                        </div>
+                    </div>
+
+                    <p-button label="Simuler la paie" icon="pi pi-calculator" [loading]="simulating()" [disabled]="contracts().length === 0" (onClick)="simulatePayroll()" />
+
+                    @if (payrollResult(); as result) {
+                        <p-divider />
+                        <div class="text-sm">
+                            @for (line of result.trace; track line.label) {
+                                <div class="flex justify-between py-1 border-b border-surface-200 dark:border-surface-700">
+                                    <div>
+                                        <div>{{ line.label }}</div>
+                                        @if (line.detail) {
+                                            <div class="text-muted-color text-xs">{{ line.detail }}</div>
+                                        }
+                                    </div>
+                                    <div class="font-mono whitespace-nowrap ml-4">{{ line.amount | number: '1.3-3' }} DT</div>
+                                </div>
+                            }
+                        </div>
+                        <div class="flex justify-between font-bold text-lg pt-2">
+                            <span>Salaire net à payer</span>
+                            <span class="font-mono">{{ result.netMonthly | number: '1.3-3' }} DT</span>
+                        </div>
+                        <div class="text-xs text-muted-color">
+                            Cotisation patronale (informative, ne réduit pas le net) : {{ result.cnssEmployerMonthly | number: '1.3-3' }} DT
+                        </div>
+                    }
+                </div>
+            </ng-template>
+            <ng-template #footer>
+                <p-button label="Fermer" icon="pi pi-times" text (click)="payrollDialogVisible = false" />
+            </ng-template>
+        </p-dialog>
+
         <p-toast />
     `
 })
 export class Employees implements OnInit {
     private readonly employeeService = inject(EmployeeService);
     private readonly establishmentService = inject(EstablishmentService);
+    private readonly contractService = inject(ContractService);
+    private readonly payrollService = inject(PayrollService);
     private readonly messageService = inject(MessageService);
 
     readonly employees = signal<EmployeeSummary[]>([]);
@@ -172,6 +267,17 @@ export class Employees implements OnInit {
     dialogVisible = false;
     editingId: string | null = null;
     form: EmployeeFormModel = emptyForm();
+
+    payrollDialogVisible = false;
+    payrollEmployeeId: string | null = null;
+    readonly contracts = signal<ContractSummary[]>([]);
+    readonly payrollResult = signal<PayrollPreviewResult | null>(null);
+    readonly creatingContract = signal(false);
+    readonly simulating = signal(false);
+    readonly contractTypeOptions = CONTRACT_TYPE_OPTIONS;
+
+    contractForm: { type: string; startDate: Date | null; baseSalary: number | null } = { type: 'Cdi', startDate: new Date(), baseSalary: null };
+    payrollForm: { isHeadOfHousehold: boolean; dependentChildren: number } = { isHeadOfHousehold: false, dependentChildren: 0 };
 
     ngOnInit(): void {
         this.reload();
@@ -282,6 +388,71 @@ export class Employees implements OnInit {
         this.messageService.add({ severity: 'error', summary: 'Erreur', detail: "L'enregistrement a échoué." });
     }
 
+    openPayroll(employee: EmployeeSummary): void {
+        this.payrollEmployeeId = employee.id;
+        this.payrollResult.set(null);
+        this.contractForm = { type: 'Cdi', startDate: new Date(), baseSalary: null };
+        this.payrollForm = { isHeadOfHousehold: false, dependentChildren: 0 };
+        this.payrollDialogVisible = true;
+
+        this.contractService.listForEmployee(employee.id).subscribe({
+            next: (contracts) => this.contracts.set(contracts),
+            error: () => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Impossible de charger les contrats.' })
+        });
+    }
+
+    createContract(): void {
+        if (!this.payrollEmployeeId || !this.contractForm.startDate || this.contractForm.baseSalary === null) {
+            this.messageService.add({ severity: 'warn', summary: 'Champs manquants', detail: 'Type, date de début et salaire de base sont obligatoires.' });
+            return;
+        }
+
+        this.creatingContract.set(true);
+        this.contractService
+            .create({
+                employeeId: this.payrollEmployeeId,
+                type: this.contractForm.type,
+                startDate: toIsoDate(this.contractForm.startDate),
+                endDate: null,
+                baseSalary: this.contractForm.baseSalary,
+                weeklyHours: null
+            })
+            .subscribe({
+                next: (contract) => {
+                    this.creatingContract.set(false);
+                    this.contracts.set([contract]);
+                    this.messageService.add({ severity: 'success', summary: 'Contrat créé', detail: 'Tu peux maintenant simuler la paie.' });
+                },
+                error: () => {
+                    this.creatingContract.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: "La création du contrat a échoué." });
+                }
+            });
+    }
+
+    simulatePayroll(): void {
+        if (!this.payrollEmployeeId) {
+            return;
+        }
+
+        this.simulating.set(true);
+        this.payrollService
+            .preview({
+                employeeId: this.payrollEmployeeId,
+                isHeadOfHousehold: this.payrollForm.isHeadOfHousehold,
+                dependentChildren: this.payrollForm.dependentChildren
+            })
+            .subscribe({
+                next: (result) => {
+                    this.simulating.set(false);
+                    this.payrollResult.set(result);
+                },
+                error: () => {
+                    this.simulating.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'La simulation a échoué.' });
+                }
+            });
+    }
 }
 
 function toIsoDate(date: Date): string {

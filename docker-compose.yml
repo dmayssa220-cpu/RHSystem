@@ -24,7 +24,7 @@ services:
       - --collation-server=utf8mb4_0900_ai_ci
       - --default-time-zone=+00:00
     ports:
-      - "127.0.0.1:3306:3306" # accessible uniquement depuis ta machine
+      - "127.0.0.1:3307:3306" # accessible uniquement depuis ta machine
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
