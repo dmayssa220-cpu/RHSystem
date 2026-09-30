@@ -1,6 +1,10 @@
 namespace Sirh.Domain.Security;
 
-
+/// <summary>
+/// Permissions applicatives. Le code autorise des permissions (ex. [Authorize(Policy =
+/// "permission:administration.utilisateurs.gerer")]), jamais des noms de rôle : un rôle
+/// n'est qu'un regroupement de permissions, modifiable par société sans toucher au code.
+/// </summary>
 public static class Permissions
 {
     public const string GererUtilisateurs = "administration.utilisateurs.gerer";
@@ -10,6 +14,7 @@ public static class Permissions
     public const string GererPersonnel = "personnel.dossier.gerer";
 
     public const string CalculerPaie = "paie.calcul.executer";
+    public const string GererDeclarations = "declarations.gerer";
 
     /// <summary>Liste complète, utilisée pour donner toutes les permissions au rôle Administrateur au démarrage.</summary>
     public static readonly IReadOnlyList<string> Toutes = new[]
@@ -18,6 +23,7 @@ public static class Permissions
         GererRoles,
         LirePersonnel,
         GererPersonnel,
-        CalculerPaie
+        CalculerPaie,
+        GererDeclarations
     };
 }

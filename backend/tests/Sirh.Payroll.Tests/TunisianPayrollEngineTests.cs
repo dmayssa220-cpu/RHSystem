@@ -4,7 +4,9 @@ namespace Sirh.Payroll.Tests;
 
 public class TunisianPayrollEngineTests
 {
-    
+    // Barème IRPP 2025 (8 tranches), CNSS RSNA et CSS 2026 tels que publiquement disponibles
+    // à l'écriture de ce test — mêmes valeurs que le jeu de données amorcé au démarrage
+    // (voir Sirh.Api.Security.DbSeeder). À recaler si un expert-comptable corrige ces chiffres.
     private static readonly TunisianPayrollParameters Parameters2026 = new(
         EffectiveFrom: new DateOnly(2026, 1, 1),
         Source: "Loi de finances 2025 — barème IRPP 8 tranches, CNSS RSNA, CSS 2026 (à valider par un expert)",

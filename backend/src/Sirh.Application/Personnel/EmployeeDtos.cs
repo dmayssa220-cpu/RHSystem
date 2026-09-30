@@ -11,14 +11,18 @@ public sealed record CreateEmployeeRequest(
     string NationalId,
     string? PersonalEmail,
     string? PersonalPhone,
-    DateOnly HireDate);
+    DateOnly HireDate,
+    bool IsHeadOfHousehold,
+    int DependentChildren);
 
 public sealed record UpdateEmployeeRequest(
     Guid? DepartmentId,
     Guid? JobPositionId,
     string? PersonalEmail,
     string? PersonalPhone,
-    string Status);
+    string Status,
+    bool IsHeadOfHousehold,
+    int DependentChildren);
 
 public sealed record EmployeeSummary(
     Guid Id,
@@ -40,4 +44,6 @@ public sealed record EmployeeDetail(
     string? PersonalEmail,
     string? PersonalPhone,
     DateOnly HireDate,
-    string Status);
+    string Status,
+    bool IsHeadOfHousehold,
+    int DependentChildren);

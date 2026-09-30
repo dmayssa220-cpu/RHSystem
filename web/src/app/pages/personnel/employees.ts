@@ -39,6 +39,8 @@ interface EmployeeFormModel {
     personalPhone: string;
     hireDate: Date | null;
     status: string;
+    isHeadOfHousehold: boolean;
+    dependentChildren: number;
 }
 
 function emptyForm(): EmployeeFormModel {
@@ -52,7 +54,9 @@ function emptyForm(): EmployeeFormModel {
         personalEmail: '',
         personalPhone: '',
         hireDate: new Date(),
-        status: 'Actif'
+        status: 'Actif',
+        isHeadOfHousehold: false,
+        dependentChildren: 0
     };
 }
 
@@ -168,6 +172,19 @@ function emptyForm(): EmployeeFormModel {
                         <label class="block font-bold mb-2">Téléphone personnel</label>
                         <input pInputText [(ngModel)]="form.personalPhone" fluid />
                     </div>
+
+                    <p-divider />
+                    <div class="text-sm text-muted-color -mt-2">Situation familiale (utilisée pour le calcul de l'IRPP)</div>
+                    <div class="grid grid-cols-12 gap-4 items-center">
+                        <div class="col-span-6 flex items-center gap-2">
+                            <p-checkbox [(ngModel)]="form.isHeadOfHousehold" [binary]="true" inputId="formChef" />
+                            <label for="formChef">Chef de famille</label>
+                        </div>
+                        <div class="col-span-6">
+                            <label class="block mb-2">Enfants à charge</label>
+                            <p-inputnumber [(ngModel)]="form.dependentChildren" [min]="0" [max]="10" fluid />
+                        </div>
+                    </div>
                 </div>
             </ng-template>
             <ng-template #footer>
@@ -203,18 +220,12 @@ function emptyForm(): EmployeeFormModel {
                         <p-divider />
                     }
 
-                    <div class="grid grid-cols-12 gap-4 items-center">
-                        <div class="col-span-6 flex items-center gap-2">
-                            <p-checkbox [(ngModel)]="payrollForm.isHeadOfHousehold" [binary]="true" inputId="chef" />
-                            <label for="chef">Chef de famille</label>
-                        </div>
-                        <div class="col-span-6">
-                            <label class="block mb-2">Enfants à charge</label>
-                            <p-inputnumber [(ngModel)]="payrollForm.dependentChildren" [min]="0" [max]="10" fluid />
-                        </div>
-                    </div>
-
                     <p-button label="Simuler la paie" icon="pi pi-calculator" [loading]="simulating()" [disabled]="contracts().length === 0" (onClick)="simulatePayroll()" />
+
+                    <div class="text-xs text-muted-color -mt-2">
+                        Situation familiale utilisée : {{ payrollEmployeeIsHeadOfHousehold ? 'chef de famille' : 'non chef de famille' }},
+                        {{ payrollEmployeeDependentChildren }} enfant(s) à charge — modifiable depuis la fiche du salarié.
+                    </div>
 
                     @if (payrollResult(); as result) {
                         <p-divider />
@@ -270,6 +281,8 @@ export class Employees implements OnInit {
 
     payrollDialogVisible = false;
     payrollEmployeeId: string | null = null;
+    payrollEmployeeIsHeadOfHousehold = false;
+    payrollEmployeeDependentChildren = 0;
     readonly contracts = signal<ContractSummary[]>([]);
     readonly payrollResult = signal<PayrollPreviewResult | null>(null);
     readonly creatingContract = signal(false);
@@ -277,7 +290,6 @@ export class Employees implements OnInit {
     readonly contractTypeOptions = CONTRACT_TYPE_OPTIONS;
 
     contractForm: { type: string; startDate: Date | null; baseSalary: number | null } = { type: 'Cdi', startDate: new Date(), baseSalary: null };
-    payrollForm: { isHeadOfHousehold: boolean; dependentChildren: number } = { isHeadOfHousehold: false, dependentChildren: 0 };
 
     ngOnInit(): void {
         this.reload();
@@ -341,7 +353,9 @@ export class Employees implements OnInit {
                     jobPositionId: null,
                     personalEmail: this.form.personalEmail || null,
                     personalPhone: this.form.personalPhone || null,
-                    status: this.form.status
+                    status: this.form.status,
+                    isHeadOfHousehold: this.form.isHeadOfHousehold,
+                    dependentChildren: this.form.dependentChildren
                 })
                 .subscribe({
                     next: () => this.onSaved('Dossier mis à jour.'),
@@ -368,7 +382,9 @@ export class Employees implements OnInit {
                 nationalId: this.form.nationalId,
                 personalEmail: this.form.personalEmail || null,
                 personalPhone: this.form.personalPhone || null,
-                hireDate: toIsoDate(this.form.hireDate)
+                hireDate: toIsoDate(this.form.hireDate),
+                isHeadOfHousehold: this.form.isHeadOfHousehold,
+                dependentChildren: this.form.dependentChildren
             })
             .subscribe({
                 next: () => this.onSaved('Salarié créé.'),
@@ -392,8 +408,12 @@ export class Employees implements OnInit {
         this.payrollEmployeeId = employee.id;
         this.payrollResult.set(null);
         this.contractForm = { type: 'Cdi', startDate: new Date(), baseSalary: null };
-        this.payrollForm = { isHeadOfHousehold: false, dependentChildren: 0 };
         this.payrollDialogVisible = true;
+
+        this.employeeService.get(employee.id).subscribe((detail) => {
+            this.payrollEmployeeIsHeadOfHousehold = detail.isHeadOfHousehold;
+            this.payrollEmployeeDependentChildren = detail.dependentChildren;
+        });
 
         this.contractService.listForEmployee(employee.id).subscribe({
             next: (contracts) => this.contracts.set(contracts),
@@ -437,11 +457,7 @@ export class Employees implements OnInit {
 
         this.simulating.set(true);
         this.payrollService
-            .preview({
-                employeeId: this.payrollEmployeeId,
-                isHeadOfHousehold: this.payrollForm.isHeadOfHousehold,
-                dependentChildren: this.payrollForm.dependentChildren
-            })
+            .preview({ employeeId: this.payrollEmployeeId })
             .subscribe({
                 next: (result) => {
                     this.simulating.set(false);

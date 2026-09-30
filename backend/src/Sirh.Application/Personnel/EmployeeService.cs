@@ -49,6 +49,8 @@ public sealed class EmployeeService(IAppDbContext dbContext, ICurrentUserService
             PersonalEmail = request.PersonalEmail,
             PersonalPhone = request.PersonalPhone,
             HireDate = request.HireDate,
+            IsHeadOfHousehold = request.IsHeadOfHousehold,
+            DependentChildren = request.DependentChildren,
             Status = EmployeeStatus.Actif,
             CreatedAtUtc = DateTime.UtcNow
         };
@@ -72,6 +74,8 @@ public sealed class EmployeeService(IAppDbContext dbContext, ICurrentUserService
         employee.PersonalEmail = request.PersonalEmail;
         employee.PersonalPhone = request.PersonalPhone;
         employee.Status = Enum.Parse<EmployeeStatus>(request.Status, ignoreCase: true);
+        employee.IsHeadOfHousehold = request.IsHeadOfHousehold;
+        employee.DependentChildren = request.DependentChildren;
         employee.UpdatedAtUtc = DateTime.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -81,5 +85,6 @@ public sealed class EmployeeService(IAppDbContext dbContext, ICurrentUserService
     private static EmployeeDetail ToDetail(Employee e) => new(
         e.Id, e.EstablishmentId, e.DepartmentId, e.JobPositionId,
         e.FirstName, e.LastName, e.Gender.ToString(), e.DateOfBirth,
-        e.NationalId, e.PersonalEmail, e.PersonalPhone, e.HireDate, e.Status.ToString());
+        e.NationalId, e.PersonalEmail, e.PersonalPhone, e.HireDate, e.Status.ToString(),
+        e.IsHeadOfHousehold, e.DependentChildren);
 }

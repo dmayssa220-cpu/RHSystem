@@ -15,6 +15,8 @@ export interface EmployeeDetail extends EmployeeSummary {
     nationalId: string;
     personalEmail: string | null;
     personalPhone: string | null;
+    isHeadOfHousehold: boolean;
+    dependentChildren: number;
 }
 
 export interface CreateEmployeeRequest {
@@ -29,6 +31,8 @@ export interface CreateEmployeeRequest {
     personalEmail: string | null;
     personalPhone: string | null;
     hireDate: string;
+    isHeadOfHousehold: boolean;
+    dependentChildren: number;
 }
 
 export interface UpdateEmployeeRequest {
@@ -37,6 +41,8 @@ export interface UpdateEmployeeRequest {
     personalEmail: string | null;
     personalPhone: string | null;
     status: string;
+    isHeadOfHousehold: boolean;
+    dependentChildren: number;
 }
 
 export const GENDER_OPTIONS = [

@@ -9,6 +9,7 @@ import { ModulePlaceholder } from './app/pages/module/module-placeholder';
 import { authGuard } from './app/core/auth/auth.guard';
 import { Login } from './app/pages/auth/login';
 import { Employees } from './app/pages/personnel/employees';
+import { Declarations } from './app/pages/declarations/declarations';
 
 export const appRoutes: Routes = [
     { path: 'login', component: Login },
@@ -19,7 +20,8 @@ export const appRoutes: Routes = [
         children: [
             { path: '', component: Dashboard },
             { path: 'personnel', component: Employees },
-            ...APP_MODULES.filter((m) => m.path !== 'personnel').map((m) => ({
+            { path: 'declarations', component: Declarations },
+            ...APP_MODULES.filter((m) => m.path !== 'personnel' && m.path !== 'declarations').map((m) => ({
                 path: m.path,
                 component: ModulePlaceholder,
                 data: { title: m.label, icon: m.icon, description: m.description }

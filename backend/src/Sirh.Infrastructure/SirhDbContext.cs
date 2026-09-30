@@ -35,6 +35,7 @@ public sealed class SirhDbContext(DbContextOptions<SirhDbContext> options, ICurr
 
     // Référentiel national, non rattaché à une société : pas de filtre de cloisonnement ici.
     public DbSet<PayrollLegalParameters> PayrollLegalParameters => Set<PayrollLegalParameters>();
+    public DbSet<Payslip> Payslips => Set<Payslip>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -67,5 +68,6 @@ public sealed class SirhDbContext(DbContextOptions<SirhDbContext> options, ICurr
         builder.Entity<JobPosition>().HasQueryFilter(e => _tenantId == null || e.TenantId == _tenantId);
         builder.Entity<Employee>().HasQueryFilter(e => _tenantId == null || e.TenantId == _tenantId);
         builder.Entity<Contract>().HasQueryFilter(e => _tenantId == null || e.TenantId == _tenantId);
+        builder.Entity<Payslip>().HasQueryFilter(e => _tenantId == null || e.TenantId == _tenantId);
     }
 }

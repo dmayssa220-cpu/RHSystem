@@ -19,6 +19,6 @@ export interface PayrollPreviewResult {
 
 export interface PayrollPreviewRequest {
     employeeId: string;
-    isHeadOfHousehold: boolean;
-    dependentChildren: number;
+    isHeadOfHousehold?: boolean;
+    dependentChildren?: number;
 }

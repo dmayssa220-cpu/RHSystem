@@ -28,6 +28,11 @@ public sealed class Employee : IHasTenant
     public DateOnly HireDate { get; set; }
     public EmployeeStatus Status { get; set; } = EmployeeStatus.Actif;
 
+    // Situation familiale déclarée par le salarié : sert au calcul des déductions IRPP
+    // (voir Sirh.Payroll.Engine). Vit ici plutôt que d'être redemandée à chaque simulation.
+    public bool IsHeadOfHousehold { get; set; }
+    public int DependentChildren { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? UpdatedAtUtc { get; set; }
 }

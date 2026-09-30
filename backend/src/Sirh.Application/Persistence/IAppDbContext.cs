@@ -17,6 +17,7 @@ public interface IAppDbContext
     DbSet<Employee> Employees { get; }
     DbSet<Contract> Contracts { get; }
     DbSet<PayrollLegalParameters> PayrollLegalParameters { get; }
+    DbSet<Payslip> Payslips { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
