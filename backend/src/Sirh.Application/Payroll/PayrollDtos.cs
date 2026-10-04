@@ -1,11 +1,13 @@
 namespace Sirh.Application.Payroll;
 
-public sealed record PayrollPreviewRequest(Guid EmployeeId, bool? IsHeadOfHousehold = null, int? DependentChildren = null);
+public sealed record PayrollPreviewRequest(Guid EmployeeId, int? Year = null, int? Month = null, bool? IsHeadOfHousehold = null, int? DependentChildren = null);
 
 public sealed record PayrollTraceLineDto(string Label, decimal Amount, string? Detail);
 
 public sealed record PayrollPreviewResult(
     Guid EmployeeId,
+    int Year,
+    int Month,
     decimal GrossMonthlySalary,
     decimal CnssEmployeeMonthly,
     decimal CnssEmployerMonthly,
@@ -52,3 +54,17 @@ public sealed record WithholdingDeclaration(
     int Year, int Month, DateOnly DueDate,
     IReadOnlyList<WithholdingDeclarationLine> Lines,
     decimal TotalIrpp, decimal TotalCss);
+
+public sealed record PayslipDetail(
+    Guid Id, Guid EmployeeId, int PeriodYear, int PeriodMonth,
+    decimal GrossMonthlySalary, decimal NetMonthly, IReadOnlyList<PayrollTraceLineDto> Trace);
+
+public sealed record PayslipComparisonLine(string Label, decimal? AmountBefore, decimal? AmountAfter, decimal Delta);
+
+/// <summary>Comparaison "paie explicable" entre deux bulletins clôturés du même salarié, ligne de trace par ligne de trace.</summary>
+public sealed record PayslipComparison(
+    Guid EmployeeId,
+    int YearBefore, int MonthBefore, int YearAfter, int MonthAfter,
+    decimal NetBefore, decimal NetAfter, decimal NetDelta,
+    IReadOnlyList<PayslipComparisonLine> Lines,
+    string Narrative);

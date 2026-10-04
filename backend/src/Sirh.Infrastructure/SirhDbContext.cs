@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Sirh.Application.Persistence;
 using Sirh.Application.Security;
+using Sirh.Domain.Compliance;
 using Sirh.Domain.Payroll;
 using Sirh.Domain.Personnel;
+using Sirh.Domain.TimeOff;
 using Sirh.Domain.Tenancy;
 using Sirh.Infrastructure.Audit;
 using Sirh.Infrastructure.Identity;
@@ -36,6 +38,9 @@ public sealed class SirhDbContext(DbContextOptions<SirhDbContext> options, ICurr
     // Référentiel national, non rattaché à une société : pas de filtre de cloisonnement ici.
     public DbSet<PayrollLegalParameters> PayrollLegalParameters => Set<PayrollLegalParameters>();
     public DbSet<Payslip> Payslips => Set<Payslip>();
+    public DbSet<PayrollVariable> PayrollVariables => Set<PayrollVariable>();
+    public DbSet<Absence> Absences => Set<Absence>();
+    public DbSet<AnomalyAlert> AnomalyAlerts => Set<AnomalyAlert>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -69,5 +74,8 @@ public sealed class SirhDbContext(DbContextOptions<SirhDbContext> options, ICurr
         builder.Entity<Employee>().HasQueryFilter(e => _tenantId == null || e.TenantId == _tenantId);
         builder.Entity<Contract>().HasQueryFilter(e => _tenantId == null || e.TenantId == _tenantId);
         builder.Entity<Payslip>().HasQueryFilter(e => _tenantId == null || e.TenantId == _tenantId);
+        builder.Entity<PayrollVariable>().HasQueryFilter(e => _tenantId == null || e.TenantId == _tenantId);
+        builder.Entity<Absence>().HasQueryFilter(e => _tenantId == null || e.TenantId == _tenantId);
+        builder.Entity<AnomalyAlert>().HasQueryFilter(e => _tenantId == null || e.TenantId == _tenantId);
     }
 }

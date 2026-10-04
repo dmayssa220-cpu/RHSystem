@@ -20,8 +20,13 @@ public sealed record TunisianPayrollParameters(
     int FamilyDeductionMaxChildren,
     IReadOnlyList<PayrollBracket> Brackets);
 
+/// <summary>Un élément variable du mois : prime, heures supplémentaires (déjà converties en montant), ou autre ajustement (peut être négatif).</summary>
+public sealed record PayrollVariableInput(string Label, decimal Amount);
+
 public sealed record PayrollCalculationRequest(
-    decimal GrossMonthlySalary,
+    decimal BaseSalaryMonthly,
+    int UnpaidLeaveDays,
+    IReadOnlyList<PayrollVariableInput> Variables,
     bool IsHeadOfHousehold,
     int DependentChildren,
     TunisianPayrollParameters Parameters);
@@ -42,8 +47,8 @@ public sealed record PayrollCalculationResult(
 
 /// <summary>
 /// Point d'entrée du moteur de paie : fonction pure, (entrées + paramètres légaux) → résultat + trace.
-/// Mêmes entrées et mêmes paramètres = toujours le même résultat, ce qui permet de rejouer un calcul
-/// à l'identique et d'expliquer chaque montant du bulletin.
+/// Mêmes entrées et mêmes paramètres légaux = toujours le même résultat, ce qui permet de rejouer un
+/// calcul à l'identique et d'expliquer chaque montant du bulletin.
 /// </summary>
 public interface IPayrollEngine
 {

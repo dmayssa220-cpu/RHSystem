@@ -32,6 +32,7 @@ public class TunisianPayrollEngineTests
         ]);
 
     private static readonly IPayrollEngine Engine = new TunisianPayrollEngine();
+    private static readonly IReadOnlyList<PayrollVariableInput> NoVariables = [];
 
     [Fact]
     public void Bareme_progressif_24000_dinars_imposables_donne_4450_dinars_d_impot()
@@ -47,7 +48,7 @@ public class TunisianPayrollEngineTests
             FamilyDeductionPerChild = 0m
         };
 
-        var result = Engine.Calculate(new PayrollCalculationRequest(2000m, false, 0, isolatedParameters));
+        var result = Engine.Calculate(new PayrollCalculationRequest(2000m, 0, NoVariables, false, 0, isolatedParameters));
 
         Assert.Equal(24000m, result.TaxableAnnual);
         Assert.Equal(4450m, result.IrppAnnual);
@@ -56,8 +57,7 @@ public class TunisianPayrollEngineTests
     [Fact]
     public void Salaire_sous_le_seuil_exonere_n_a_pas_d_irpp()
     {
-        var result = Engine.Calculate(new PayrollCalculationRequest(
-            GrossMonthlySalary: 350m, IsHeadOfHousehold: false, DependentChildren: 0, Parameters: Parameters2026));
+        var result = Engine.Calculate(new PayrollCalculationRequest(350m, 0, NoVariables, false, 0, Parameters2026));
 
         Assert.Equal(0m, result.IrppAnnual);
     }
@@ -65,8 +65,7 @@ public class TunisianPayrollEngineTests
     [Fact]
     public void La_trace_explique_chaque_montant_et_le_dernier_montant_est_le_net()
     {
-        var result = Engine.Calculate(new PayrollCalculationRequest(
-            GrossMonthlySalary: 1500m, IsHeadOfHousehold: true, DependentChildren: 2, Parameters: Parameters2026));
+        var result = Engine.Calculate(new PayrollCalculationRequest(1500m, 0, NoVariables, true, 2, Parameters2026));
 
         Assert.NotEmpty(result.Trace);
         Assert.Equal("Salaire net à payer", result.Trace[^1].Label);
@@ -77,12 +76,44 @@ public class TunisianPayrollEngineTests
     [Fact]
     public void Le_calcul_est_deterministe()
     {
-        var request = new PayrollCalculationRequest(2450.500m, true, 3, Parameters2026);
+        var request = new PayrollCalculationRequest(2450.500m, 0, NoVariables, true, 3, Parameters2026);
 
         var first = Engine.Calculate(request);
         var second = Engine.Calculate(request);
 
         Assert.Equal(first.NetMonthly, second.NetMonthly);
         Assert.Equal(first.IrppAnnual, second.IrppAnnual);
+    }
+
+    [Fact]
+    public void Une_prime_augmente_le_brut_et_apparait_dans_la_trace()
+    {
+        var variables = new List<PayrollVariableInput> { new("Prime exceptionnelle", 200m) };
+
+        var result = Engine.Calculate(new PayrollCalculationRequest(1500m, 0, variables, false, 0, Parameters2026));
+
+        Assert.Equal(1700m, result.GrossMonthlySalary);
+        Assert.Contains(result.Trace, line => line.Label == "Prime exceptionnelle" && line.Amount == 200m);
+    }
+
+    [Fact]
+    public void Cinq_jours_sans_solde_reduisent_le_brut_d_un_sixieme_du_salaire_de_base()
+    {
+        // Convention : mois forfaitaire de 30 jours → taux journalier = base / 30.
+        // 1 500 DT / 30 = 50 DT/jour ; 5 jours = 250 DT de retenue ; brut = 1 500 - 250 = 1 250 DT.
+        var result = Engine.Calculate(new PayrollCalculationRequest(1500m, 5, NoVariables, false, 0, Parameters2026));
+
+        Assert.Equal(1250m, result.GrossMonthlySalary);
+    }
+
+    [Fact]
+    public void Absence_sans_solde_et_prime_se_cumulent_dans_le_meme_calcul()
+    {
+        var variables = new List<PayrollVariableInput> { new("Heures supplémentaires", 80m) };
+
+        // Base 1 500, 2 jours sans solde (2 × 50 = 100 de retenue), prime 80 → brut = 1 500 - 100 + 80 = 1 480.
+        var result = Engine.Calculate(new PayrollCalculationRequest(1500m, 2, variables, false, 0, Parameters2026));
+
+        Assert.Equal(1480m, result.GrossMonthlySalary);
     }
 }

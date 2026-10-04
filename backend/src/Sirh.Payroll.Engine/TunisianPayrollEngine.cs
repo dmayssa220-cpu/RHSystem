@@ -2,9 +2,7 @@ namespace Sirh.Payroll.Engine;
 
 /// <summary>
 /// Moteur de calcul de la paie tunisienne (régime général, secteur privé non agricole,
-/// retenue à la source mensuelle par projection annuelle). Ne couvre pour l'instant que le
-/// salaire de base du contrat : primes, heures supplémentaires et absences viendront avec
-/// le module Temps et absences.
+/// retenue à la source mensuelle par projection annuelle).
 ///
 /// AVERTISSEMENT : les taux et barèmes par défaut (voir le seed dans Sirh.Api.Security.DbSeeder)
 /// sont ceux publiquement disponibles en 2026 (CNSS RSNA, barème IRPP à 8 tranches de la loi de
@@ -13,13 +11,35 @@ namespace Sirh.Payroll.Engine;
 /// </summary>
 public sealed class TunisianPayrollEngine : IPayrollEngine
 {
+    /// <summary>Convention utilisée pour proratiser une absence sans solde : un mois "forfaitaire" de 30 jours.</summary>
+    private const int DaysPerMonth = 30;
+
     public PayrollCalculationResult Calculate(PayrollCalculationRequest request)
     {
         var p = request.Parameters;
         var trace = new List<PayrollTraceLine>();
 
-        var gross = Round(request.GrossMonthlySalary);
-        trace.Add(new PayrollTraceLine("Salaire brut mensuel", gross, "Salaire de base du contrat"));
+        var baseSalary = Round(request.BaseSalaryMonthly);
+        trace.Add(new PayrollTraceLine("Salaire de base du contrat", baseSalary));
+
+        var unpaidDeduction = 0m;
+        if (request.UnpaidLeaveDays > 0)
+        {
+            var dailyRate = Round(baseSalary / DaysPerMonth);
+            unpaidDeduction = Round(dailyRate * request.UnpaidLeaveDays);
+            trace.Add(new PayrollTraceLine(
+                $"Retenue pour absence sans solde ({request.UnpaidLeaveDays} jour(s))", -unpaidDeduction,
+                $"{dailyRate:0.000} DT/jour (salaire de base ÷ {DaysPerMonth})"));
+        }
+
+        foreach (var variable in request.Variables)
+        {
+            trace.Add(new PayrollTraceLine(variable.Label, Round(variable.Amount)));
+        }
+
+        var variablesTotal = Round(request.Variables.Sum(v => v.Amount));
+        var gross = Round(baseSalary - unpaidDeduction + variablesTotal);
+        trace.Add(new PayrollTraceLine("Salaire brut mensuel", gross));
 
         var cnssCeilingMonthly = p.CnssCeilingAnnual.HasValue ? p.CnssCeilingAnnual.Value / 12m : (decimal?)null;
         var cnssBase = cnssCeilingMonthly.HasValue ? Math.Min(gross, cnssCeilingMonthly.Value) : gross;

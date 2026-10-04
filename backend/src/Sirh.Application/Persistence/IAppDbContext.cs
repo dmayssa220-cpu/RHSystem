@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Sirh.Domain.Compliance;
 using Sirh.Domain.Payroll;
 using Sirh.Domain.Personnel;
+using Sirh.Domain.TimeOff;
 
 namespace Sirh.Application.Persistence;
 
@@ -18,6 +20,9 @@ public interface IAppDbContext
     DbSet<Contract> Contracts { get; }
     DbSet<PayrollLegalParameters> PayrollLegalParameters { get; }
     DbSet<Payslip> Payslips { get; }
+    DbSet<PayrollVariable> PayrollVariables { get; }
+    DbSet<Absence> Absences { get; }
+    DbSet<AnomalyAlert> AnomalyAlerts { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

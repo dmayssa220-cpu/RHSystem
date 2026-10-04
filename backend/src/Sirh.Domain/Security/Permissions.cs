@@ -15,6 +15,13 @@ public static class Permissions
 
     public const string CalculerPaie = "paie.calcul.executer";
     public const string GererDeclarations = "declarations.gerer";
+    public const string GererVariablesPaie = "paie.variables.gerer";
+
+    public const string LireAbsences = "temps.absences.lire";
+    public const string GererAbsences = "temps.absences.gerer";
+
+    public const string LireAnomalies = "conformite.anomalies.lire";
+    public const string GererAnomalies = "conformite.anomalies.gerer";
 
     /// <summary>Liste complète, utilisée pour donner toutes les permissions au rôle Administrateur au démarrage.</summary>
     public static readonly IReadOnlyList<string> Toutes = new[]
@@ -24,6 +31,11 @@ public static class Permissions
         LirePersonnel,
         GererPersonnel,
         CalculerPaie,
-        GererDeclarations
+        GererDeclarations,
+        GererVariablesPaie,
+        LireAbsences,
+        GererAbsences,
+        LireAnomalies,
+        GererAnomalies
     };
 }

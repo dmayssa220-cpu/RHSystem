@@ -86,6 +86,9 @@ builder.Services.AddScoped<Sirh.Application.Personnel.EstablishmentService>();
 builder.Services.AddScoped<Sirh.Application.Personnel.ContractService>();
 builder.Services.AddScoped<Sirh.Payroll.Engine.IPayrollEngine, Sirh.Payroll.Engine.TunisianPayrollEngine>();
 builder.Services.AddScoped<Sirh.Application.Payroll.PayrollService>();
+builder.Services.AddScoped<Sirh.Application.Payroll.PayrollVariableService>();
+builder.Services.AddScoped<Sirh.Application.TimeOff.AbsenceService>();
+builder.Services.AddScoped<Sirh.Application.Compliance.AnomalyDetectionService>();
 
 // ---------- Limitation de débit sur les points d'entrée d'authentification ----------
 builder.Services.AddRateLimiter(options =>

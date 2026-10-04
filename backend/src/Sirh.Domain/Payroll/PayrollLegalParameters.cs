@@ -25,6 +25,9 @@ public sealed class PayrollLegalParameters
 
     public decimal CssRate { get; set; }
 
+    /// <summary>SMIG mensuel brut (régime 48h, le plus courant) — sert au contrôle de conformité "salaire sous le minimum légal".</summary>
+    public decimal MinimumWageMonthly { get; set; }
+
     public decimal FamilyDeductionHeadOfHousehold { get; set; }
     public decimal FamilyDeductionPerChild { get; set; }
     public int FamilyDeductionMaxChildren { get; set; }

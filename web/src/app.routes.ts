@@ -10,6 +10,8 @@ import { authGuard } from './app/core/auth/auth.guard';
 import { Login } from './app/pages/auth/login';
 import { Employees } from './app/pages/personnel/employees';
 import { Declarations } from './app/pages/declarations/declarations';
+import { Absences } from './app/pages/timeoff/absences';
+import { Compliance } from './app/pages/compliance/compliance';
 
 export const appRoutes: Routes = [
     { path: 'login', component: Login },
@@ -21,7 +23,9 @@ export const appRoutes: Routes = [
             { path: '', component: Dashboard },
             { path: 'personnel', component: Employees },
             { path: 'declarations', component: Declarations },
-            ...APP_MODULES.filter((m) => m.path !== 'personnel' && m.path !== 'declarations').map((m) => ({
+            { path: 'temps', component: Absences },
+            { path: 'conformite', component: Compliance },
+            ...APP_MODULES.filter((m) => !['personnel', 'declarations', 'temps', 'conformite'].includes(m.path)).map((m) => ({
                 path: m.path,
                 component: ModulePlaceholder,
                 data: { title: m.label, icon: m.icon, description: m.description }

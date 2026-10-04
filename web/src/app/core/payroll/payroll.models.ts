@@ -6,6 +6,8 @@ export interface PayrollTraceLine {
 
 export interface PayrollPreviewResult {
     employeeId: string;
+    year: number;
+    month: number;
     grossMonthlySalary: number;
     cnssEmployeeMonthly: number;
     cnssEmployerMonthly: number;
@@ -19,6 +21,8 @@ export interface PayrollPreviewResult {
 
 export interface PayrollPreviewRequest {
     employeeId: string;
+    year?: number;
+    month?: number;
     isHeadOfHousehold?: boolean;
     dependentChildren?: number;
 }

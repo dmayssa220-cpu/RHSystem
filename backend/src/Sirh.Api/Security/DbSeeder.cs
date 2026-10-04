@@ -125,13 +125,15 @@ public static class DbSeeder
         {
             Id = Guid.NewGuid(),
             EffectiveFrom = new DateOnly(2026, 1, 1),
-            Source = "Loi de finances 2025 (loi n° 48-2024) : barème IRPP à 8 tranches ; taux CNSS RSNA et CSS publics 2026 — à valider par un expert avant tout calcul réel.",
+            Source = "Loi de finances 2025 (loi n° 48-2024) : barème IRPP à 8 tranches ; taux CNSS RSNA et CSS publics 2026 ; " +
+                     "SMIG régime 48h fixé par le décret n° 67/2026 (JORT du 30/04/2026) — à valider par un expert avant tout calcul réel.",
             CnssEmployeeRate = 0.0968m,
             CnssEmployerRate = 0.1707m,
             CnssCeilingAnnual = null,
             ProfessionalDeductionRate = 0.10m,
             ProfessionalDeductionCeilingAnnual = 2000m,
             CssRate = 0.005m,
+            MinimumWageMonthly = 554.736m, // SMIG régime 48h, décret n° 67/2026 (JORT, 30/04/2026)
             FamilyDeductionHeadOfHousehold = 300m,
             FamilyDeductionPerChild = 100m,
             FamilyDeductionMaxChildren = 4

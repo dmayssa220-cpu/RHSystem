@@ -20,6 +20,8 @@ import { ContractService } from '@/app/core/personnel/contract.service';
 import { CONTRACT_TYPE_OPTIONS, ContractSummary } from '@/app/core/personnel/contract.models';
 import { PayrollService } from '@/app/core/payroll/payroll.service';
 import { PayrollPreviewResult } from '@/app/core/payroll/payroll.models';
+import { PayrollVariableService } from '@/app/core/payroll/payroll-variable.service';
+import { PAYROLL_VARIABLE_TYPE_OPTIONS, PayrollVariableSummary } from '@/app/core/payroll/payroll-variable.models';
 import { EmployeeDetail, EmployeeSummary, GENDER_OPTIONS, EMPLOYEE_STATUS_OPTIONS, employeeStatusLabel, employeeStatusSeverity } from '@/app/core/personnel/employee.models';
 
 interface EstablishmentOption {
@@ -220,6 +222,46 @@ function emptyForm(): EmployeeFormModel {
                         <p-divider />
                     }
 
+                    <p-divider />
+                    <div class="grid grid-cols-12 gap-4 items-end">
+                        <div class="col-span-4">
+                            <label class="block mb-2">Mois</label>
+                            <p-select [(ngModel)]="payrollMonth" [options]="monthOptions" optionLabel="label" optionValue="value" fluid />
+                        </div>
+                        <div class="col-span-4">
+                            <label class="block mb-2">Année</label>
+                            <p-inputnumber [(ngModel)]="payrollYear" [useGrouping]="false" fluid />
+                        </div>
+                        <div class="col-span-4">
+                            <p-button label="Charger" icon="pi pi-refresh" [outlined]="true" (onClick)="loadVariables()" />
+                        </div>
+                    </div>
+
+                    <div class="text-sm font-bold">Éléments variables du mois (primes, heures supplémentaires…)</div>
+                    @for (variable of variables(); track variable.id) {
+                        <div class="flex justify-between items-center text-sm">
+                            <span>{{ variable.label }} ({{ variable.type }})</span>
+                            <span class="flex items-center gap-2">
+                                <span class="font-mono">{{ variable.amount | number: '1.3-3' }} DT</span>
+                                <p-button icon="pi pi-trash" severity="danger" text [rounded]="true" (click)="deleteVariable(variable.id)" />
+                            </span>
+                        </div>
+                    }
+                    <div class="grid grid-cols-12 gap-2 items-end">
+                        <div class="col-span-4">
+                            <p-select [(ngModel)]="variableForm.type" [options]="variableTypeOptions" optionLabel="label" optionValue="value" fluid />
+                        </div>
+                        <div class="col-span-4">
+                            <input pInputText [(ngModel)]="variableForm.label" placeholder="Libellé" fluid />
+                        </div>
+                        <div class="col-span-3">
+                            <p-inputnumber [(ngModel)]="variableForm.amount" mode="decimal" [minFractionDigits]="3" [maxFractionDigits]="3" placeholder="Montant" fluid />
+                        </div>
+                        <div class="col-span-1">
+                            <p-button icon="pi pi-plus" [loading]="addingVariable()" (onClick)="addVariable()" />
+                        </div>
+                    </div>
+
                     <p-button label="Simuler la paie" icon="pi pi-calculator" [loading]="simulating()" [disabled]="contracts().length === 0" (onClick)="simulatePayroll()" />
 
                     <div class="text-xs text-muted-color -mt-2">
@@ -265,6 +307,7 @@ export class Employees implements OnInit {
     private readonly establishmentService = inject(EstablishmentService);
     private readonly contractService = inject(ContractService);
     private readonly payrollService = inject(PayrollService);
+    private readonly payrollVariableService = inject(PayrollVariableService);
     private readonly messageService = inject(MessageService);
 
     readonly employees = signal<EmployeeSummary[]>([]);
@@ -290,6 +333,20 @@ export class Employees implements OnInit {
     readonly contractTypeOptions = CONTRACT_TYPE_OPTIONS;
 
     contractForm: { type: string; startDate: Date | null; baseSalary: number | null } = { type: 'Cdi', startDate: new Date(), baseSalary: null };
+
+    private readonly now = new Date();
+    payrollYear = this.now.getFullYear();
+    payrollMonth = this.now.getMonth() + 1;
+    readonly monthOptions = [
+        { label: 'Janvier', value: 1 }, { label: 'Février', value: 2 }, { label: 'Mars', value: 3 },
+        { label: 'Avril', value: 4 }, { label: 'Mai', value: 5 }, { label: 'Juin', value: 6 },
+        { label: 'Juillet', value: 7 }, { label: 'Août', value: 8 }, { label: 'Septembre', value: 9 },
+        { label: 'Octobre', value: 10 }, { label: 'Novembre', value: 11 }, { label: 'Décembre', value: 12 }
+    ];
+    readonly variableTypeOptions = PAYROLL_VARIABLE_TYPE_OPTIONS;
+    readonly variables = signal<PayrollVariableSummary[]>([]);
+    readonly addingVariable = signal(false);
+    variableForm: { type: string; label: string; amount: number | null } = { type: 'Prime', label: '', amount: null };
 
     ngOnInit(): void {
         this.reload();
@@ -408,6 +465,8 @@ export class Employees implements OnInit {
         this.payrollEmployeeId = employee.id;
         this.payrollResult.set(null);
         this.contractForm = { type: 'Cdi', startDate: new Date(), baseSalary: null };
+        this.payrollYear = this.now.getFullYear();
+        this.payrollMonth = this.now.getMonth() + 1;
         this.payrollDialogVisible = true;
 
         this.employeeService.get(employee.id).subscribe((detail) => {
@@ -419,6 +478,48 @@ export class Employees implements OnInit {
             next: (contracts) => this.contracts.set(contracts),
             error: () => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Impossible de charger les contrats.' })
         });
+
+        this.loadVariables();
+    }
+
+    loadVariables(): void {
+        if (!this.payrollEmployeeId) {
+            return;
+        }
+        this.payrollVariableService.list(this.payrollEmployeeId, this.payrollYear, this.payrollMonth).subscribe((variables) => this.variables.set(variables));
+    }
+
+    addVariable(): void {
+        if (!this.payrollEmployeeId || !this.variableForm.label || this.variableForm.amount === null) {
+            this.messageService.add({ severity: 'warn', summary: 'Champs manquants', detail: 'Libellé et montant sont obligatoires.' });
+            return;
+        }
+
+        this.addingVariable.set(true);
+        this.payrollVariableService
+            .create({
+                employeeId: this.payrollEmployeeId,
+                periodYear: this.payrollYear,
+                periodMonth: this.payrollMonth,
+                type: this.variableForm.type,
+                label: this.variableForm.label,
+                amount: this.variableForm.amount
+            })
+            .subscribe({
+                next: () => {
+                    this.addingVariable.set(false);
+                    this.variableForm = { type: 'Prime', label: '', amount: null };
+                    this.loadVariables();
+                },
+                error: () => {
+                    this.addingVariable.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: "L'ajout a échoué." });
+                }
+            });
+    }
+
+    deleteVariable(id: string): void {
+        this.payrollVariableService.delete(id).subscribe(() => this.loadVariables());
     }
 
     createContract(): void {
@@ -457,7 +558,7 @@ export class Employees implements OnInit {
 
         this.simulating.set(true);
         this.payrollService
-            .preview({ employeeId: this.payrollEmployeeId })
+            .preview({ employeeId: this.payrollEmployeeId, year: this.payrollYear, month: this.payrollMonth })
             .subscribe({
                 next: (result) => {
                     this.simulating.set(false);

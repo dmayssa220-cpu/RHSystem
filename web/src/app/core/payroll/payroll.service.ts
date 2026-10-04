@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PayrollPreviewRequest, PayrollPreviewResult } from './payroll.models';
 import { CloseMonthResult, CnssQuarterlyDeclaration, WithholdingDeclaration } from './declaration.models';
+import { PayslipComparison } from './payslip-comparison.models';
 
 @Injectable({ providedIn: 'root' })
 export class PayrollService {
@@ -22,5 +23,11 @@ export class PayrollService {
 
     getWithholdingDeclaration(year: number, month: number): Observable<WithholdingDeclaration> {
         return this.http.get<WithholdingDeclaration>(`/api/paie/declarations/retenue-source/${year}/${month}`);
+    }
+
+    comparePayslips(employeeId: string, yearBefore: number, monthBefore: number, yearAfter: number, monthAfter: number): Observable<PayslipComparison> {
+        return this.http.get<PayslipComparison>(`/api/paie/bulletins/${employeeId}/comparaison`, {
+            params: { yearBefore, monthBefore, yearAfter, monthAfter }
+        });
     }
 }

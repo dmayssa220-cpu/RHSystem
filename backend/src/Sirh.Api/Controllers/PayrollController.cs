@@ -59,4 +59,29 @@ public sealed class PayrollController(PayrollService payrollService) : Controlle
     [Authorize(Policy = "permission:" + Permissions.GererDeclarations)]
     public async Task<IActionResult> WithholdingDeclaration(int year, int month, CancellationToken cancellationToken) =>
         Ok(await payrollService.GetWithholdingDeclarationAsync(year, month, cancellationToken));
+
+    /// <summary>Un bulletin déjà clôturé, avec sa trace de calcul figée au moment de la clôture.</summary>
+    [HttpGet("bulletins/{employeeId:guid}/{year:int}/{month:int}")]
+    [Authorize(Policy = "permission:" + Permissions.CalculerPaie)]
+    public async Task<IActionResult> GetPayslip(Guid employeeId, int year, int month, CancellationToken cancellationToken)
+    {
+        var payslip = await payrollService.GetPayslipAsync(employeeId, year, month, cancellationToken);
+        return payslip is null ? NotFound() : Ok(payslip);
+    }
+
+    /// <summary>Compare deux bulletins déjà clôturés du même salarié et explique l'écart de net en langage courant.</summary>
+    [HttpGet("bulletins/{employeeId:guid}/comparaison")]
+    [Authorize(Policy = "permission:" + Permissions.CalculerPaie)]
+    public async Task<IActionResult> ComparePayslips(
+        Guid employeeId, [FromQuery] int yearBefore, [FromQuery] int monthBefore, [FromQuery] int yearAfter, [FromQuery] int monthAfter, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await payrollService.CompareAsync(employeeId, yearBefore, monthBefore, yearAfter, monthAfter, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

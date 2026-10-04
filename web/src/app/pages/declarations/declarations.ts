@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -11,6 +11,9 @@ import { TabsModule } from 'primeng/tabs';
 import { ToastModule } from 'primeng/toast';
 import { PayrollService } from '@/app/core/payroll/payroll.service';
 import { CloseMonthResult, CnssQuarterlyDeclaration, WithholdingDeclaration } from '@/app/core/payroll/declaration.models';
+import { PayslipComparison } from '@/app/core/payroll/payslip-comparison.models';
+import { EmployeeService } from '@/app/core/personnel/employee.service';
+import { EmployeeSummary } from '@/app/core/personnel/employee.models';
 
 const MONTH_OPTIONS = [
     { label: 'Janvier', value: 1 },
@@ -55,6 +58,7 @@ const QUARTER_OPTIONS = [
                     <p-tab value="0">Clôturer un mois</p-tab>
                     <p-tab value="1">CNSS (trimestrielle)</p-tab>
                     <p-tab value="2">Retenue à la source (mensuelle)</p-tab>
+                    <p-tab value="3">Paie explicable (comparer deux mois)</p-tab>
                 </p-tablist>
                 <p-tabpanels>
                     <p-tabpanel value="0">
@@ -207,6 +211,66 @@ const QUARTER_OPTIONS = [
                             </p-table>
                         }
                     </p-tabpanel>
+
+                    <p-tabpanel value="3">
+                        <p class="text-sm text-muted-color mb-4">
+                            Compare deux bulletins déjà clôturés du même salarié, ligne de trace par ligne de
+                            trace, et explique l'écart de net à partir des montants réels — rien n'est inventé.
+                        </p>
+                        <div class="flex flex-wrap items-end gap-4 mb-4">
+                            <div>
+                                <label class="block mb-2">Salarié</label>
+                                <p-select [(ngModel)]="comparisonEmployeeId" [options]="employees()" optionLabel="displayName" optionValue="id" placeholder="Choisir un salarié" style="min-width: 14rem" />
+                            </div>
+                            <div>
+                                <label class="block mb-2">Mois de référence</label>
+                                <p-select [(ngModel)]="comparisonMonthBefore" [options]="monthOptions" optionLabel="label" optionValue="value" />
+                            </div>
+                            <div>
+                                <label class="block mb-2">Année</label>
+                                <p-inputnumber [(ngModel)]="comparisonYearBefore" [useGrouping]="false" />
+                            </div>
+                            <div>
+                                <label class="block mb-2">Mois comparé</label>
+                                <p-select [(ngModel)]="comparisonMonthAfter" [options]="monthOptions" optionLabel="label" optionValue="value" />
+                            </div>
+                            <div>
+                                <label class="block mb-2">Année</label>
+                                <p-inputnumber [(ngModel)]="comparisonYearAfter" [useGrouping]="false" />
+                            </div>
+                            <p-button label="Comparer" icon="pi pi-search" [loading]="comparing()" (onClick)="compare()" />
+                        </div>
+
+                        @if (comparison(); as cmp) {
+                            <div class="p-4 rounded-border bg-primary-50 dark:bg-primary-950 text-sm mb-4">{{ cmp.narrative }}</div>
+                            <p-table [value]="cmp.lines">
+                                <ng-template #header>
+                                    <tr>
+                                        <th>Ligne</th>
+                                        <th>Avant</th>
+                                        <th>Après</th>
+                                        <th>Écart</th>
+                                    </tr>
+                                </ng-template>
+                                <ng-template #body let-line>
+                                    <tr>
+                                        <td>{{ line.label }}</td>
+                                        <td>{{ line.amountBefore !== null ? (line.amountBefore | number: '1.3-3') + ' DT' : '—' }}</td>
+                                        <td>{{ line.amountAfter !== null ? (line.amountAfter | number: '1.3-3') + ' DT' : '—' }}</td>
+                                        <td [class]="line.delta > 0 ? 'text-green-600' : 'text-red-500'">{{ line.delta > 0 ? '+' : '' }}{{ line.delta | number: '1.3-3' }} DT</td>
+                                    </tr>
+                                </ng-template>
+                                <ng-template #footer>
+                                    <tr>
+                                        <td class="font-bold">Salaire net à payer</td>
+                                        <td class="font-bold">{{ cmp.netBefore | number: '1.3-3' }} DT</td>
+                                        <td class="font-bold">{{ cmp.netAfter | number: '1.3-3' }} DT</td>
+                                        <td class="font-bold" [class]="cmp.netDelta > 0 ? 'text-green-600' : 'text-red-500'">{{ cmp.netDelta > 0 ? '+' : '' }}{{ cmp.netDelta | number: '1.3-3' }} DT</td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        }
+                    </p-tabpanel>
                 </p-tabpanels>
             </p-tabs>
         </div>
@@ -214,8 +278,9 @@ const QUARTER_OPTIONS = [
         <p-toast />
     `
 })
-export class Declarations {
+export class Declarations implements OnInit {
     private readonly payrollService = inject(PayrollService);
+    private readonly employeeService = inject(EmployeeService);
     private readonly messageService = inject(MessageService);
 
     readonly monthOptions = MONTH_OPTIONS;
@@ -237,6 +302,15 @@ export class Declarations {
     withholdingMonth = this.now.getMonth() + 1;
     readonly loadingWithholding = signal(false);
     readonly withholdingDeclaration = signal<WithholdingDeclaration | null>(null);
+
+    readonly employees = signal<(EmployeeSummary & { displayName: string })[]>([]);
+    comparisonEmployeeId: string | null = null;
+    comparisonYearBefore = this.now.getFullYear();
+    comparisonMonthBefore = this.now.getMonth() === 0 ? 12 : this.now.getMonth();
+    comparisonYearAfter = this.now.getFullYear();
+    comparisonMonthAfter = this.now.getMonth() + 1;
+    readonly comparing = signal(false);
+    readonly comparison = signal<PayslipComparison | null>(null);
 
     doCloseMonth(): void {
         this.closing.set(true);
@@ -279,5 +353,32 @@ export class Declarations {
                 this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Impossible de charger la déclaration.' });
             }
         });
+    }
+
+    ngOnInit(): void {
+        this.employeeService.list().subscribe((employees) => {
+            this.employees.set(employees.map((e) => ({ ...e, displayName: `${e.lastName} ${e.firstName}` })));
+        });
+    }
+
+    compare(): void {
+        if (!this.comparisonEmployeeId) {
+            this.messageService.add({ severity: 'warn', summary: 'Champ manquant', detail: 'Choisis un salarié.' });
+            return;
+        }
+
+        this.comparing.set(true);
+        this.payrollService
+            .comparePayslips(this.comparisonEmployeeId, this.comparisonYearBefore, this.comparisonMonthBefore, this.comparisonYearAfter, this.comparisonMonthAfter)
+            .subscribe({
+                next: (comparison) => {
+                    this.comparing.set(false);
+                    this.comparison.set(comparison);
+                },
+                error: (error) => {
+                    this.comparing.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: error?.error?.message ?? 'La comparaison a échoué.' });
+                }
+            });
     }
 }
