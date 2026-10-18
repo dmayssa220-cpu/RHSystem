@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Sirh.Api.Ai;
 using Sirh.Api.Security;
+using Sirh.Application.Ai;
 using Sirh.Application.Security;
 using Sirh.Infrastructure;
 using Sirh.Infrastructure.Identity;
@@ -89,6 +91,27 @@ builder.Services.AddScoped<Sirh.Application.Payroll.PayrollService>();
 builder.Services.AddScoped<Sirh.Application.Payroll.PayrollVariableService>();
 builder.Services.AddScoped<Sirh.Application.TimeOff.AbsenceService>();
 builder.Services.AddScoped<Sirh.Application.Compliance.AnomalyDetectionService>();
+
+// ---------- IA générative : aucun fournisseur par défaut (Ai:Provider=None) ----------
+// Aucun appel réseau, aucun coût, aucune donnée envoyée à l'extérieur tant que ce n'est pas
+// explicitement configuré. Voir README, section IA générative, pour activer Ollama (gratuit, local).
+var aiProvider = builder.Configuration["Ai:Provider"] ?? "None";
+if (string.Equals(aiProvider, "Ollama", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddHttpClient<ILlmClient, OllamaLlmClient>(client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["Ai:OllamaBaseUrl"] ?? "http://ollama:11434");
+        client.Timeout = TimeSpan.FromSeconds(60);
+    });
+}
+else
+{
+    builder.Services.AddSingleton<ILlmClient, NullLlmClient>();
+}
+
+builder.Services.AddScoped<Sirh.Application.Ai.PayrollReadinessAgent>();
+builder.Services.AddScoped<Sirh.Application.Ai.PayrollExplanationAgent>();
+builder.Services.AddScoped<Sirh.Application.Ai.HrDocumentService>();
 
 // ---------- Limitation de débit sur les points d'entrée d'authentification ----------
 builder.Services.AddRateLimiter(options =>

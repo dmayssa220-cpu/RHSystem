@@ -1,10 +1,9 @@
-# Secrets
 .env
 *.pfx
 *.key
 secrets/
 
-# .NET
+
 bin/
 obj/
 .vs/
@@ -12,12 +11,12 @@ obj/
 *.suo
 TestResults/
 
-# Angular / Node
+
 node_modules/
 dist/
 .angular/
 
-# IDE / OS
+
 .idea/
 .vscode/*
 !.vscode/extensions.json

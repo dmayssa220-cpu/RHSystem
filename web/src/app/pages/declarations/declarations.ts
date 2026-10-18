@@ -12,6 +12,7 @@ import { ToastModule } from 'primeng/toast';
 import { PayrollService } from '@/app/core/payroll/payroll.service';
 import { CloseMonthResult, CnssQuarterlyDeclaration, WithholdingDeclaration } from '@/app/core/payroll/declaration.models';
 import { PayslipComparison } from '@/app/core/payroll/payslip-comparison.models';
+import { AiService } from '@/app/core/ai/ai.service';
 import { EmployeeService } from '@/app/core/personnel/employee.service';
 import { EmployeeSummary } from '@/app/core/personnel/employee.models';
 
@@ -242,7 +243,13 @@ const QUARTER_OPTIONS = [
                         </div>
 
                         @if (comparison(); as cmp) {
-                            <div class="p-4 rounded-border bg-primary-50 dark:bg-primary-950 text-sm mb-4">{{ cmp.narrative }}</div>
+                            <div class="p-4 rounded-border bg-primary-50 dark:bg-primary-950 text-sm mb-2">
+                                {{ explanation() ?? cmp.narrative }}
+                                @if (explanationReformulated()) {
+                                    <span class="text-xs text-muted-color ml-2">(reformulé par l'IA)</span>
+                                }
+                            </div>
+                            <p-button label="Reformuler avec l'IA" icon="pi pi-sparkles" size="small" text [loading]="explaining()" (onClick)="explainWithAi()" styleClass="mb-4" />
                             <p-table [value]="cmp.lines">
                                 <ng-template #header>
                                     <tr>
@@ -281,6 +288,7 @@ const QUARTER_OPTIONS = [
 export class Declarations implements OnInit {
     private readonly payrollService = inject(PayrollService);
     private readonly employeeService = inject(EmployeeService);
+    private readonly aiService = inject(AiService);
     private readonly messageService = inject(MessageService);
 
     readonly monthOptions = MONTH_OPTIONS;
@@ -311,6 +319,9 @@ export class Declarations implements OnInit {
     comparisonMonthAfter = this.now.getMonth() + 1;
     readonly comparing = signal(false);
     readonly comparison = signal<PayslipComparison | null>(null);
+    readonly explaining = signal(false);
+    readonly explanation = signal<string | null>(null);
+    readonly explanationReformulated = signal(false);
 
     doCloseMonth(): void {
         this.closing.set(true);
@@ -374,10 +385,33 @@ export class Declarations implements OnInit {
                 next: (comparison) => {
                     this.comparing.set(false);
                     this.comparison.set(comparison);
+                    this.explanation.set(null);
+                    this.explanationReformulated.set(false);
                 },
                 error: (error) => {
                     this.comparing.set(false);
                     this.messageService.add({ severity: 'error', summary: 'Erreur', detail: error?.error?.message ?? 'La comparaison a échoué.' });
+                }
+            });
+    }
+
+    explainWithAi(): void {
+        if (!this.comparisonEmployeeId) {
+            return;
+        }
+
+        this.explaining.set(true);
+        this.aiService
+            .explainComparison(this.comparisonEmployeeId, this.comparisonYearBefore, this.comparisonMonthBefore, this.comparisonYearAfter, this.comparisonMonthAfter)
+            .subscribe({
+                next: (result) => {
+                    this.explaining.set(false);
+                    this.explanation.set(result.text);
+                    this.explanationReformulated.set(result.reformulated);
+                },
+                error: () => {
+                    this.explaining.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'La reformulation a échoué.' });
                 }
             });
     }

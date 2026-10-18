@@ -12,6 +12,7 @@ import { Employees } from './app/pages/personnel/employees';
 import { Declarations } from './app/pages/declarations/declarations';
 import { Absences } from './app/pages/timeoff/absences';
 import { Compliance } from './app/pages/compliance/compliance';
+import { Assistant } from './app/pages/ai/assistant';
 
 export const appRoutes: Routes = [
     { path: 'login', component: Login },
@@ -25,7 +26,8 @@ export const appRoutes: Routes = [
             { path: 'declarations', component: Declarations },
             { path: 'temps', component: Absences },
             { path: 'conformite', component: Compliance },
-            ...APP_MODULES.filter((m) => !['personnel', 'declarations', 'temps', 'conformite'].includes(m.path)).map((m) => ({
+            { path: 'assistant-ia', component: Assistant },
+            ...APP_MODULES.filter((m) => !['personnel', 'declarations', 'temps', 'conformite', 'assistant-ia'].includes(m.path)).map((m) => ({
                 path: m.path,
                 component: ModulePlaceholder,
                 data: { title: m.label, icon: m.icon, description: m.description }

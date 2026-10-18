@@ -1,11 +1,3 @@
-# Environnement SIRH — tout tourne dans Docker.
-#
-#   docker compose up -d --build
-#
-# Aucune installation locale de .NET ou de Node n'est nécessaire pour faire tourner
-# l'application : le SDK .NET et Node ne servent qu'à l'intérieur des images de build
-# (voir backend/Dockerfile et web/Dockerfile), jamais sur la machine hôte.
-
 name: sirh
 
 services:
@@ -24,7 +16,7 @@ services:
       - --collation-server=utf8mb4_0900_ai_ci
       - --default-time-zone=+00:00
     ports:
-      - "127.0.0.1:3306:3306" # accessible uniquement depuis ta machine
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
@@ -61,6 +53,9 @@ services:
       Jwt__AccessTokenMinutes: "15"
       Seed__AdminEmail: ${ADMIN_EMAIL:-admin@sirh.local}
       Seed__AdminPassword: ${ADMIN_PASSWORD:?Définis ADMIN_PASSWORD dans .env}
+      Ai__Provider: ${AI_PROVIDER:-None}
+      Ai__OllamaBaseUrl: ${AI_OLLAMA_BASE_URL:-http://ollama:11434}
+      Ai__OllamaModel: ${AI_OLLAMA_MODEL:-llama3.2}
     security_opt:
       - no-new-privileges:true
     cap_drop: [ALL]
